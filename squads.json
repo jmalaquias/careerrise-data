@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Viktor Gyökeres",
+    "club": "Sporting CP",
+    "league": "Liga Portugal",
+    "position": "PL",
+    "overall": 84,
+    "potential": 87,
+    "age": 26,
+    "game_version": "FC26"
+  },
+  {
+    "name": "Diogo Costa",
+    "club": "FC Porto",
+    "league": "Liga Portugal",
+    "position": "GR",
+    "overall": 82,
+    "potential": 88,
+    "age": 25,
+    "game_version": "FC26"
+  },
+  {
+    "name": "António Silva",
+    "club": "SL Benfica",
+    "league": "Liga Portugal",
+    "position": "DC",
+    "overall": 79,
+    "potential": 86,
+    "age": 21,
+    "game_version": "FC26"
+  }
+]
