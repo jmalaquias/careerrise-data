@@ -1,7 +1,8 @@
 {
-  "version": 2,
-  "game_version": "FC26",
+  "version": 3,
+  "game_version": "FC26/FC27",
   "updated_at": "06/11/2026",
-  "total_players": 9,
-  "changelog": "Atualização automática de plantéis (06/11/2026)"
+  "total_players": 19789,
+  "total_clubs": 702,
+  "changelog": "Plantéis completos carregados (19789 jogadores)"
 }
