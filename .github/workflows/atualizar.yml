@@ -1,10 +1,7 @@
 name: Atualizar Plantéis Automaticamente
 
 on:
-  # Permite correr manualmente quando clicares num botão no GitHub
   workflow_dispatch:
-  
-  # Corre automaticamente todas as sextas-feiras às 20:00 (hora das atualizações da EA)
   schedule:
     - cron: '0 20 * * 5'
 
@@ -15,10 +12,12 @@ jobs:
       contents: write
 
     steps:
-      - name: Verificar Código do Repositório
+      - name: Checkout Código
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configurar Ambiente Python
+      - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -26,9 +25,14 @@ jobs:
       - name: Executar Script Extrator de Plantéis
         run: python update_squads.py
 
-      - name: Guardar e Fazer Commit Automático
+      - name: Gravar e Fazer Push dos Dados
         run: |
           git config --global user.name "CareerRise Bot"
           git config --global user.email "bot@careerrise.com"
           git add squads.json version.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "🤖 Atualização automática de plantéis [skip ci]" && git push)
+          if git diff --staged --quiet; then
+            echo "Sem alterações para gravar."
+          else
+            git commit -m "🤖 Base de dados atualizada com sucesso [skip ci]"
+            git push
+          fi
