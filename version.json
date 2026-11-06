@@ -1,8 +1,8 @@
 {
-  "version": 3,
+  "version": 4,
   "game_version": "FC26/FC27",
   "updated_at": "06/11/2026",
   "total_players": 19789,
   "total_clubs": 702,
-  "changelog": "Plantéis completos carregados (19789 jogadores)"
+  "changelog": "Base de dados calibrada (19789 jogadores, 702 clubes)"
 }
