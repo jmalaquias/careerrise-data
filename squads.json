@@ -10,6 +10,16 @@
     "game_version": "FC26"
   },
   {
+    "name": "Morten Hjulmand",
+    "club": "Sporting CP",
+    "league": "Liga Portugal",
+    "position": "MDC",
+    "overall": 80,
+    "potential": 85,
+    "age": 25,
+    "game_version": "FC26"
+  },
+  {
     "name": "Diogo Costa",
     "club": "FC Porto",
     "league": "Liga Portugal",
@@ -20,12 +30,62 @@
     "game_version": "FC26"
   },
   {
+    "name": "Samu Omorodion",
+    "club": "FC Porto",
+    "league": "Liga Portugal",
+    "position": "PL",
+    "overall": 78,
+    "potential": 86,
+    "age": 20,
+    "game_version": "FC26"
+  },
+  {
+    "name": "Ángel Di María",
+    "club": "SL Benfica",
+    "league": "Liga Portugal",
+    "position": "ED",
+    "overall": 83,
+    "potential": 83,
+    "age": 36,
+    "game_version": "FC26"
+  },
+  {
     "name": "António Silva",
     "club": "SL Benfica",
     "league": "Liga Portugal",
     "position": "DC",
     "overall": 79,
     "potential": 86,
+    "age": 21,
+    "game_version": "FC26"
+  },
+  {
+    "name": "Erling Haaland",
+    "club": "Manchester City",
+    "league": "Premier League",
+    "position": "PL",
+    "overall": 91,
+    "potential": 94,
+    "age": 24,
+    "game_version": "FC26"
+  },
+  {
+    "name": "Kylian Mbappé",
+    "club": "Real Madrid",
+    "league": "La Liga",
+    "position": "PL",
+    "overall": 91,
+    "potential": 94,
+    "age": 25,
+    "game_version": "FC26"
+  },
+  {
+    "name": "Jude Bellingham",
+    "club": "Real Madrid",
+    "league": "La Liga",
+    "position": "MO",
+    "overall": 90,
+    "potential": 95,
     "age": 21,
     "game_version": "FC26"
   }
