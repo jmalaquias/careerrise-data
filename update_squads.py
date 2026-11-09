@@ -4,18 +4,65 @@ import csv
 import datetime
 import re
 
-def extrair_todos_jogadores_fc():
-    print("🌍 A iniciar download da Base Mundial do EA Sports FC...")
+def gerar_url_foto(player_id):
+    """Gera o URL oficial da CDN da foto do jogador com base no ID da EA/Sofifa"""
+    try:
+        pid = int(player_id)
+        if pid <= 0:
+            return ""
+        # Formato Sofifa / EA Sports CDN (ex: ID 241096 -> 241/096/25_120.png)
+        pid_str = str(pid).zfill(6)
+        p1 = pid_str[:3]
+        p2 = pid_str[3:]
+        return f"https://cdn.sofifa.net/players/{p1}/{p2}/25_120.png"
+    except Exception:
+        return ""
 
-    # URL oficial codificado com %20 no espaço do caminho
-    DATASET_URL = "https://raw.githubusercontent.com/LakshmiKanth11/EA_FC_ANALYSIS/main/EA_FC_PLAYERS_DATASET_AND_%20DASHBOARD/data/players.csv"
+def gerar_url_clube(clube_nome, club_id=None):
+    """Gera o URL oficial do emblema do clube"""
+    if club_id and str(club_id).isdigit() and int(club_id) > 0:
+        return f"https://cdn.sofifa.net/meta/team/{club_id}/120.png"
     
+    # Mapeamento dos principais clubes para garantir emblemas imediatos em alta definição
+    clubes_ids = {
+        "Sporting CP": "237",
+        "SL Benfica": "234",
+        "FC Porto": "236",
+        "SC Braga": "1896",
+        "Vitória SC": "1887",
+        "Boavista": "1898",
+        "Famalicão": "113007",
+        "Rio Ave": "744",
+        "Gil Vicente": "110940",
+        "Manchester City": "10",
+        "Arsenal": "1",
+        "Liverpool": "9",
+        "Real Madrid": "243",
+        "FC Barcelona": "241",
+        "Atlético de Madrid": "240",
+        "Paris Saint-Germain": "73",
+        "Bayern München": "21",
+        "Borussia Dortmund": "22",
+        "Juventus": "45",
+        "Inter": "44",
+        "Milan": "47"
+    }
+    cid = clubes_ids.get(clube_nome)
+    if cid:
+        return f"https://cdn.sofifa.net/meta/team/{cid}/120.png"
+    return ""
+
+def extrair_todos_jogadores_fc():
+    print("🌍 A iniciar download da Base Mundial do EA Sports FC com Fotos e Emblemas...")
+
+    # URL oficial codificado com %20 no espaço
+    DATASET_URL = "https://raw.githubusercontent.com/LakshmiKanth11/EA_FC_ANALYSIS/main/EA_FC_PLAYERS_DATASET_AND_%20DASHBOARD/data/players.csv"
+
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     }
     req = urllib.request.Request(DATASET_URL, headers=headers)
 
-    # Dicionário de tradução para as posições em Português
     posicoes_pt = {
         "GK": "GR",
         "CB": "DC",
@@ -43,31 +90,33 @@ def extrair_todos_jogadores_fc():
             reader = csv.DictReader(lines)
 
             for row in reader:
-                # 1. Nome do Jogador
+                # 1. ID do Jogador
+                player_id = row.get('player_id') or row.get('fifa_id') or "0"
+
+                # 2. Nome do Jogador
                 display_name = (row.get('display_name') or '').strip()
                 if not display_name:
                     first = (row.get('first_name') or '').strip()
                     last = (row.get('last_name') or '').strip()
                     display_name = f"{first} {last}".strip() if (first or last) else "Jogador"
 
-                # 2. Clube e Liga
+                # 3. Clube e Liga
                 clube = (row.get('club') or '').strip() or "Sem Clube"
                 liga = (row.get('league') or '').strip() or "Outras Ligas"
+                club_id = row.get('club_id')
 
-                # 3. Posição
+                # 4. Posição
                 pos_original = (row.get('position') or 'CM').strip().upper()
                 posicao = posicoes_pt.get(pos_original, pos_original)
 
-                # 4. Overall Rating
+                # 5. Overall Rating
                 try:
                     overall = int(row.get('overall_rating') or row.get('overall') or 65)
                 except Exception:
                     overall = 65
 
-                # 5. Cálculo Inteligente da Idade Real
+                # 6. Idade Real
                 idade = None
-
-                # Tentativa A: Coluna direta de idade
                 col_age = row.get('age')
                 if col_age:
                     try:
@@ -77,21 +126,18 @@ def extrair_todos_jogadores_fc():
                     except Exception:
                         pass
 
-                # Tentativa B: Extração a partir da data de nascimento (ex: 2001-04-20 ou 20/04/2001)
                 if idade is None:
                     birthdate = str(row.get('birthdate') or '')
-                    anos_encontrados = re.findall(r'\b(19\d{2}|20\d{2})\b', birthdate)
-                    if anos_encontrados:
-                        ano_nasc = int(anos_encontrados[0])
-                        calc = ano_referencia - ano_nasc
+                    anos = re.findall(r'\b(19\d{2}|20\d{2})\b', birthdate)
+                    if anos:
+                        calc = ano_referencia - int(anos[0])
                         if 15 <= calc <= 44:
                             idade = calc
 
-                # Se não encontrar nada, atribui idade média realista baseada no overall
                 if idade is None:
                     idade = 24
 
-                # 6. Cálculo do Potencial
+                # 7. Potencial
                 col_pot = row.get('potential')
                 if col_pot:
                     try:
@@ -106,6 +152,10 @@ def extrair_todos_jogadores_fc():
                     else:
                         potencial = overall
 
+                # 8. URLs de Imagens (Cara e Emblema)
+                photo_url = gerar_url_foto(player_id)
+                club_logo_url = gerar_url_clube(clube, club_id)
+
                 jogadores.append({
                     "name": display_name,
                     "club": clube,
@@ -114,67 +164,55 @@ def extrair_todos_jogadores_fc():
                     "overall": overall,
                     "potential": max(overall, potencial),
                     "age": idade,
-                    "game_version": "FC26"
+                    "game_version": "FC26",
+                    "photo_url": photo_url,
+                    "club_logo_url": club_logo_url,
+                    "flag_url": ""
                 })
 
-        print(f"✅ Download concluído! {len(jogadores)} jogadores processados.")
+        print(f"✅ Sucesso absoluto! {len(jogadores)} jogadores processados com links de fotos e emblemas.")
 
     except Exception as e:
         print(f"⚠️ Erro ao aceder à fonte externa: {e}")
-        print("A carregar contingência estruturada...")
+        print("A carregar contingência de alta precisão com fotos...")
+        # Contingência completa com IDs oficiais para fotos reais imediatas
         jogadores = [
             # Manchester City
-            {"name": "Erling Haaland", "club": "Manchester City", "league": "Premier League", "position": "PL", "overall": 91, "potential": 94, "age": 24, "game_version": "FC26"},
-            {"name": "Kevin De Bruyne", "club": "Manchester City", "league": "Premier League", "position": "MC", "overall": 90, "potential": 90, "age": 33, "game_version": "FC26"},
-            {"name": "Rodri", "club": "Manchester City", "league": "Premier League", "position": "MDC", "overall": 91, "potential": 92, "age": 28, "game_version": "FC26"},
-            {"name": "Phil Foden", "club": "Manchester City", "league": "Premier League", "position": "ED", "overall": 88, "potential": 92, "age": 24, "game_version": "FC26"},
-            {"name": "Bernardo Silva", "club": "Manchester City", "league": "Premier League", "position": "MC", "overall": 88, "potential": 88, "age": 30, "game_version": "FC26"},
-            {"name": "Rúben Dias", "club": "Manchester City", "league": "Premier League", "position": "DC", "overall": 88, "potential": 90, "age": 27, "game_version": "FC26"},
-            {"name": "Ederson", "club": "Manchester City", "league": "Premier League", "position": "GR", "overall": 88, "potential": 89, "age": 31, "game_version": "FC26"},
-            {"name": "Jérémy Doku", "club": "Manchester City", "league": "Premier League", "position": "EE", "overall": 81, "potential": 87, "age": 22, "game_version": "FC26"},
-            {"name": "Joško Gvardiol", "club": "Manchester City", "league": "Premier League", "position": "DE", "overall": 83, "potential": 88, "age": 22, "game_version": "FC26"},
+            {"name": "Erling Haaland", "club": "Manchester City", "league": "Premier League", "position": "PL", "overall": 91, "potential": 94, "age": 24, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/239/053/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/10/120.png", "flag_url": ""},
+            {"name": "Kevin De Bruyne", "club": "Manchester City", "league": "Premier League", "position": "MC", "overall": 90, "potential": 90, "age": 33, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/192/985/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/10/120.png", "flag_url": ""},
+            {"name": "Rodri", "club": "Manchester City", "league": "Premier League", "position": "MDC", "overall": 91, "potential": 92, "age": 28, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/231/866/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/10/120.png", "flag_url": ""},
+            {"name": "Phil Foden", "club": "Manchester City", "league": "Premier League", "position": "ED", "overall": 88, "potential": 92, "age": 24, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/237/692/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/10/120.png", "flag_url": ""},
+            {"name": "Bernardo Silva", "club": "Manchester City", "league": "Premier League", "position": "MC", "overall": 88, "potential": 88, "age": 30, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/218/667/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/10/120.png", "flag_url": ""},
+            {"name": "Rúben Dias", "club": "Manchester City", "league": "Premier League", "position": "DC", "overall": 88, "potential": 90, "age": 27, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/239/818/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/10/120.png", "flag_url": ""},
 
             # Sporting CP
-            {"name": "Viktor Gyökeres", "club": "Sporting CP", "league": "Liga Portugal", "position": "PL", "overall": 84, "potential": 87, "age": 26, "game_version": "FC26"},
-            {"name": "Morten Hjulmand", "club": "Sporting CP", "league": "Liga Portugal", "position": "MDC", "overall": 80, "potential": 85, "age": 25, "game_version": "FC26"},
-            {"name": "Pedro Gonçalves", "club": "Sporting CP", "league": "Liga Portugal", "position": "MO", "overall": 82, "potential": 84, "age": 26, "game_version": "FC26"},
-            {"name": "Francisco Trincão", "club": "Sporting CP", "league": "Liga Portugal", "position": "ED", "overall": 79, "potential": 83, "age": 25, "game_version": "FC26"},
-            {"name": "Gonçalo Inácio", "club": "Sporting CP", "league": "Liga Portugal", "position": "DC", "overall": 80, "potential": 86, "age": 23, "game_version": "FC26"},
-            {"name": "Ousmane Diomande", "club": "Sporting CP", "league": "Liga Portugal", "position": "DC", "overall": 79, "potential": 86, "age": 21, "game_version": "FC26"},
-            {"name": "Geovany Quenda", "club": "Sporting CP", "league": "Liga Portugal", "position": "ED", "overall": 72, "potential": 88, "age": 17, "game_version": "FC26"},
-            {"name": "Geny Catamo", "club": "Sporting CP", "league": "Liga Portugal", "position": "ED", "overall": 77, "potential": 82, "age": 23, "game_version": "FC26"},
-            {"name": "Franco Israel", "club": "Sporting CP", "league": "Liga Portugal", "position": "GR", "overall": 76, "potential": 82, "age": 24, "game_version": "FC26"},
+            {"name": "Viktor Gyökeres", "club": "Sporting CP", "league": "Liga Portugal", "position": "PL", "overall": 84, "potential": 87, "age": 26, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/241/096/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/237/120.png", "flag_url": ""},
+            {"name": "Morten Hjulmand", "club": "Sporting CP", "league": "Liga Portugal", "position": "MDC", "overall": 80, "potential": 85, "age": 25, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/244/260/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/237/120.png", "flag_url": ""},
+            {"name": "Pedro Gonçalves", "club": "Sporting CP", "league": "Liga Portugal", "position": "MO", "overall": 82, "potential": 84, "age": 26, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/242/444/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/237/120.png", "flag_url": ""},
+            {"name": "Francisco Trincão", "club": "Sporting CP", "league": "Liga Portugal", "position": "ED", "overall": 79, "potential": 83, "age": 25, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/240/017/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/237/120.png", "flag_url": ""},
+            {"name": "Gonçalo Inácio", "club": "Sporting CP", "league": "Liga Portugal", "position": "DC", "overall": 80, "potential": 86, "age": 23, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/258/831/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/237/120.png", "flag_url": ""},
+            {"name": "Geovany Quenda", "club": "Sporting CP", "league": "Liga Portugal", "position": "ED", "overall": 72, "potential": 88, "age": 17, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/279/118/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/237/120.png", "flag_url": ""},
 
             # FC Porto
-            {"name": "Diogo Costa", "club": "FC Porto", "league": "Liga Portugal", "position": "GR", "overall": 82, "potential": 88, "age": 25, "game_version": "FC26"},
-            {"name": "Samu Omorodion", "club": "FC Porto", "league": "Liga Portugal", "position": "PL", "overall": 78, "potential": 86, "age": 20, "game_version": "FC26"},
-            {"name": "Alan Varela", "club": "FC Porto", "league": "Liga Portugal", "position": "MDC", "overall": 80, "potential": 86, "age": 23, "game_version": "FC26"},
-            {"name": "Pepê", "club": "FC Porto", "league": "Liga Portugal", "position": "ED", "overall": 80, "potential": 81, "age": 27, "game_version": "FC26"},
-            {"name": "Galeno", "club": "FC Porto", "league": "Liga Portugal", "position": "EE", "overall": 80, "potential": 80, "age": 27, "game_version": "FC26"},
-            {"name": "Nico González", "club": "FC Porto", "league": "Liga Portugal", "position": "MC", "overall": 78, "potential": 84, "age": 22, "game_version": "FC26"},
-            {"name": "Rodrigo Mora", "club": "FC Porto", "league": "Liga Portugal", "position": "MO", "overall": 72, "potential": 88, "age": 17, "game_version": "FC26"},
-            {"name": "Nehuén Pérez", "club": "FC Porto", "league": "Liga Portugal", "position": "DC", "overall": 78, "potential": 82, "age": 24, "game_version": "FC26"},
+            {"name": "Diogo Costa", "club": "FC Porto", "league": "Liga Portugal", "position": "GR", "overall": 82, "potential": 88, "age": 25, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/236/583/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/236/120.png", "flag_url": ""},
+            {"name": "Samu Omorodion", "club": "FC Porto", "league": "Liga Portugal", "position": "PL", "overall": 78, "potential": 86, "age": 20, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/277/111/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/236/120.png", "flag_url": ""},
+            {"name": "Alan Varela", "club": "FC Porto", "league": "Liga Portugal", "position": "MDC", "overall": 80, "potential": 86, "age": 23, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/258/119/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/236/120.png", "flag_url": ""},
+            {"name": "Rodrigo Mora", "club": "FC Porto", "league": "Liga Portugal", "position": "MO", "overall": 72, "potential": 88, "age": 17, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/278/877/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/236/120.png", "flag_url": ""},
 
             # SL Benfica
-            {"name": "Ángel Di María", "club": "SL Benfica", "league": "Liga Portugal", "position": "ED", "overall": 83, "potential": 83, "age": 36, "game_version": "FC26"},
-            {"name": "Orkun Kökçü", "club": "SL Benfica", "league": "Liga Portugal", "position": "MC", "overall": 80, "potential": 84, "age": 23, "game_version": "FC26"},
-            {"name": "Kerem Aktürkoğlu", "club": "SL Benfica", "league": "Liga Portugal", "position": "EE", "overall": 80, "potential": 82, "age": 26, "game_version": "FC26"},
-            {"name": "Vangelis Pavlidis", "club": "SL Benfica", "league": "Liga Portugal", "position": "PL", "overall": 80, "potential": 82, "age": 26, "game_version": "FC26"},
-            {"name": "António Silva", "club": "SL Benfica", "league": "Liga Portugal", "position": "DC", "overall": 79, "potential": 86, "age": 21, "game_version": "FC26"},
-            {"name": "Tomás Araújo", "club": "SL Benfica", "league": "Liga Portugal", "position": "DC", "overall": 77, "potential": 85, "age": 22, "game_version": "FC26"},
-            {"name": "Florentino Luís", "club": "SL Benfica", "league": "Liga Portugal", "position": "MDC", "overall": 79, "potential": 84, "age": 25, "game_version": "FC26"},
-            {"name": "Anatoliy Trubin", "club": "SL Benfica", "league": "Liga Portugal", "position": "GR", "overall": 80, "potential": 86, "age": 23, "game_version": "FC26"},
+            {"name": "Ángel Di María", "club": "SL Benfica", "league": "Liga Portugal", "position": "ED", "overall": 83, "potential": 83, "age": 36, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/183/898/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/234/120.png", "flag_url": ""},
+            {"name": "António Silva", "club": "SL Benfica", "league": "Liga Portugal", "position": "DC", "overall": 79, "potential": 86, "age": 21, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/269/414/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/234/120.png", "flag_url": ""},
+            {"name": "Orkun Kökçü", "club": "SL Benfica", "league": "Liga Portugal", "position": "MC", "overall": 80, "potential": 84, "age": 23, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/241/810/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/234/120.png", "flag_url": ""},
+            {"name": "Anatoliy Trubin", "club": "SL Benfica", "league": "Liga Portugal", "position": "GR", "overall": 80, "potential": 86, "age": 23, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/254/544/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/234/120.png", "flag_url": ""},
 
             # Real Madrid
-            {"name": "Kylian Mbappé", "club": "Real Madrid", "league": "La Liga", "position": "PL", "overall": 91, "potential": 94, "age": 25, "game_version": "FC26"},
-            {"name": "Vinícius Júnior", "club": "Real Madrid", "league": "La Liga", "position": "EE", "overall": 90, "potential": 94, "age": 24, "game_version": "FC26"},
-            {"name": "Jude Bellingham", "club": "Real Madrid", "league": "La Liga", "position": "MO", "overall": 90, "potential": 95, "age": 21, "game_version": "FC26"},
-            {"name": "Federico Valverde", "club": "Real Madrid", "league": "La Liga", "position": "MC", "overall": 88, "potential": 90, "age": 26, "game_version": "FC26"},
-            {"name": "Thibaut Courtois", "club": "Real Madrid", "league": "La Liga", "position": "GR", "overall": 89, "potential": 89, "age": 32, "game_version": "FC26"}
+            {"name": "Kylian Mbappé", "club": "Real Madrid", "league": "La Liga", "position": "PL", "overall": 91, "potential": 94, "age": 25, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/231/747/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/243/120.png", "flag_url": ""},
+            {"name": "Vinícius Júnior", "club": "Real Madrid", "league": "La Liga", "position": "EE", "overall": 90, "potential": 94, "age": 24, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/238/794/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/243/120.png", "flag_url": ""},
+            {"name": "Jude Bellingham", "club": "Real Madrid", "league": "La Liga", "position": "MO", "overall": 90, "potential": 95, "age": 21, "game_version": "FC26", "photo_url": "https://cdn.sofifa.net/players/252/371/25_120.png", "club_logo_url": "https://cdn.sofifa.net/meta/team/243/120.png", "flag_url": ""}
         ]
 
     # 1. Gravar ficheiro squads.json comprimido
-    print("💾 A compactar e gravar squads.json...")
+    print("💾 A compactar squads.json...")
     with open("squads.json", "w", encoding="utf-8") as f:
         json.dump(jogadores, f, ensure_ascii=False, separators=(',', ':'))
 
@@ -184,7 +222,7 @@ def extrair_todos_jogadores_fc():
             v_data = json.load(f)
             nova_versao = v_data.get("version", 1) + 1
     except Exception:
-        nova_versao = 4
+        nova_versao = 5
 
     clubes_unicos = len(set(j['club'] for j in jogadores))
     hoje = datetime.date.today().strftime("%d/%m/%Y")
@@ -195,13 +233,13 @@ def extrair_todos_jogadores_fc():
         "updated_at": hoje,
         "total_players": len(jogadores),
         "total_clubs": clubes_unicos,
-        "changelog": f"Base de dados calibrada ({len(jogadores)} jogadores, {clubes_unicos} clubes)"
+        "changelog": f"Base de dados com Fotos e Emblemas CDN ({len(jogadores)} jogadores)"
     }
 
     with open("version.json", "w", encoding="utf-8") as f:
         json.dump(versao_info, f, ensure_ascii=False, indent=2)
 
-    print(f"🚀 Concluído com Sucesso! Versão {nova_versao} pronta a sincronizar.")
+    print(f"🚀 Base de dados gerada com sucesso! Nova Versão: {nova_versao}")
 
 if __name__ == "__main__":
     extrair_todos_jogadores_fc()
