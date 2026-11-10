@@ -4,6 +4,21 @@ import csv
 import datetime
 import re
 
+# Ligas femininas para não misturar nos plantéis masculinos
+            ligas_femininas = [
+                "google pixel frauen-bundesliga", "frauen-bundesliga", 
+                "barclays women's super league", "wsl", "liga f", 
+                "d1 arkema", "nwsl", "women's champions league"
+            ]
+
+            for row in reader:
+                liga = (row.get('league') or '').strip().lower()
+                gender = (row.get('gender') or '').strip().upper()
+
+                # Ignora jogadoras femininas para os plantéis de treinador masculino
+                if gender == 'F' or any(lf in liga for lf in ligas_femininas):
+                    continue
+                    
 def gerar_url_foto(player_id):
     """Gera o URL oficial da CDN da foto do jogador com base no ID da EA/Sofifa"""
     try:
