@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -34,5 +35,6 @@ jobs:
             echo "Sem alterações para gravar."
           else
             git commit -m "🤖 Base de dados atualizada com sucesso [skip ci]"
-            git push
+            git pull --rebase origin main
+            git push origin main
           fi
