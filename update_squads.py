@@ -21,9 +21,15 @@ def gerar_url_clube(clube_nome):
         "Sporting CP": "237", "SL Benfica": "234", "FC Porto": "236",
         "SC Braga": "1896", "Vitória SC": "1887", "Boavista": "1898",
         "Famalicão": "113007", "Rio Ave": "744", "Gil Vicente": "110940",
+        "Moreirense": "1900", "Santa Clara": "110946", "Arouca": "112512",
+        "Estoril Praia": "10020", "Casa Pia": "114385", "Farense": "110955",
+        "Nacional": "1891", "AVS": "116335", "Estrela da Amadora": "116315",
         "1. FC Köln": "31", "Bayern München": "21", "Borussia Dortmund": "22",
+        "Bayer 04 Leverkusen": "32", "RB Leipzig": "112172",
         "Manchester City": "10", "Arsenal": "1", "Liverpool": "9",
-        "Real Madrid": "243", "FC Barcelona": "241", "Paris Saint-Germain": "73"
+        "Manchester United": "11", "Chelsea": "5", "Tottenham Hotspur": "18",
+        "Real Madrid": "243", "FC Barcelona": "241", "Atlético de Madrid": "240",
+        "Paris Saint-Germain": "73", "Juventus": "45", "Inter": "44", "Milan": "47"
     }
     cid = clubes_ids.get(clube_nome)
     if cid:
@@ -43,11 +49,6 @@ def extrair_todos_jogadores_fc():
         "LW": "EE", "RW": "ED", "CF": "SA", "ST": "PL"
     }
 
-    ligas_femininas = [
-        "frauen-bundesliga", "barclays women's super league", "wsl", 
-        "liga f", "d1 arkema", "nwsl", "women's champions league"
-    ]
-
     jogadores = []
     ano_referencia = 2026
 
@@ -57,11 +58,9 @@ def extrair_todos_jogadores_fc():
             reader = csv.DictReader(lines)
 
             for row in reader:
-                liga = (row.get('league') or '').strip().lower()
-                gender = (row.get('gender') or '').strip().upper()
-
-                # Filtra e ignora futebol feminino para manter a fidelidade do Sofifa
-                if gender == 'F' or any(lf in liga for lf in ligas_femininas):
+                # FILTRO OFICIAL DO SOFIFA: MANTÉM APENAS FUTEBOL MASCULINO
+                gender = (row.get('gender') or '').strip()
+                if gender and gender != "Men's Football":
                     continue
 
                 player_id = row.get('player_id') or "0"
@@ -130,17 +129,17 @@ def extrair_todos_jogadores_fc():
         json.dump(jogadores, f, ensure_ascii=False, separators=(',', ':'))
 
     versao_info = {
-        "version": 11,
+        "version": 15,
         "game_version": "FC26/FC27",
         "updated_at": datetime.date.today().strftime("%d/%m/%Y"),
         "total_players": len(jogadores),
-        "changelog": "Versão 11 com plantéis masculinos filtrados e fotos ativas"
+        "changelog": "Versão 15 Oficial: Futebol Masculino Puro com Fotos e Emblemas"
     }
 
     with open("version.json", "w", encoding="utf-8") as f:
         json.dump(versao_info, f, ensure_ascii=False, indent=2)
 
-    print("Versão 11 gravada com sucesso!")
+    print("Versão 15 gravada com sucesso!")
 
 if __name__ == "__main__":
     extrair_todos_jogadores_fc()
