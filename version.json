@@ -1,8 +1,7 @@
 {
-  "version": 7,
+  "version": 11,
   "game_version": "FC26/FC27",
-  "updated_at": "09/11/2026",
-  "total_players": 19789,
-  "total_clubs": 702,
-  "changelog": "Base de dados com Fotos e Emblemas CDN (19789 jogadores)"
+  "updated_at": "10/11/2026",
+  "total_players": 18746,
+  "changelog": "Versão 11 com plantéis masculinos filtrados e fotos ativas"
 }
